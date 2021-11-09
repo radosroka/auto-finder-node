@@ -67,9 +67,9 @@ router.post('/main',
                 .trim(),
               check('car_color')
                 .trim(),
-              check('car_year')
+              check('car_year_from')
                 .trim(),
-              check('car_other')
+              check('car_year_to')
                 .trim(),
             ],
             async (req, res) => {
@@ -86,9 +86,9 @@ router.post('/main',
     });
   }
 
-  let sql = 'SELECT * FROM my_view '
-  let where = " WHERE "
-  let query = []
+  var sql = 'SELECT * FROM my_view '
+  var where = " WHERE "
+  var query = []
 
   const car_plate = req.body.car_plate;
 
@@ -99,7 +99,8 @@ router.post('/main',
   const car_model = req.body.car_model;
 
   if (! (car_model === '')) {
-    query.push(` lower(car_model) ~* '.*${car_model.toLowerCase()}.*' `)
+    var model = car_model.split(" ").join('.*')
+    query.push(` lower(car_model) ~* '.*${model.toLowerCase()}.*' `)
   }
 
 
@@ -117,10 +118,16 @@ router.post('/main',
   }
 
 
-  const car_year = req.body.car_year;
+  const car_year_from = req.body.car_year_from;
 
-  if (! (car_year === '')) {
-    query.push(`car_year = '${car_year}'`)
+  if (! (car_year_from === '')) {
+    query.push(`car_year >= '${car_year_from}'`)
+  }
+
+  const car_year_to = req.body.car_year_to;
+
+  if (! (car_year_to === '')) {
+    query.push(`car_year <= '${car_year_to}'`)
   }
 
 
