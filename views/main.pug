@@ -1,0 +1,103 @@
+extends layout
+
+block content
+  -data = data || {}
+
+  hr
+
+  form(action="/main" method="POST" class="form-registration")
+    div(class="container")
+      div(class="row")
+        div(class="col-sm")
+          label(for="car_plate") Car Plate:
+          input(
+            type="text"
+            id="car_plate"
+            name="car_plate"
+            class="form-control"
+            value=data.car_plate
+          )
+
+          label(for="car_model") Car Model:
+          input(
+            type="text"
+            id="car_model"
+            name="car_model"
+            class="form-control"
+            value=data.car_model
+            )
+
+          label(for="type_name") Type Name:
+          input(
+            type="text"
+            id="type_name"
+            name="type_name"
+            class="form-control"
+            value=data.type_name
+            )
+
+        div(class="col-sm")
+          label(for="car_color") Car Color:
+          input(
+            type="text"
+            id="car_color"
+            name="car_color"
+            class="form-control"
+            value=data.car_color
+            )
+
+
+          label(for="car_year") Car Year:
+          input(
+            type="text"
+            id="car_year"
+            name="car_year"
+            class="form-control"
+            value=data.car_year
+            )
+
+          label(for="other") Car Other:
+          input(
+            type="text"
+            id="car_other"
+            name="car_other"
+            class="form-control"
+            value=data.car_other
+            )
+
+
+      hr
+
+      if errors
+        ul.my-errors
+          for error in errors
+            li= error.msg
+
+      div(class="row")
+        div(class="col-lg")
+          input(
+            type="submit"
+            value="Search"
+            class="btn btn-lg btn-primary btn-block"
+            )
+
+  hr
+
+
+  table(class="table table-striped table-hover table-sm")
+    tr
+      th(scope="col") car_plate
+      th(scope="col") car_model
+      th(scope="col") type_name
+      th(scope="col") car_color
+      th(scope="col") car_year
+
+    - var biluppgifter_link = 'https://biluppgifter.se/fordon/';
+    for x in rows
+      tr
+        td(scope="col")
+          a(href=biluppgifter_link + x[0]) #{x[0]}
+        td(scope="col") #{x[1]}
+        td(scope="col") #{x[2]}
+        td(scope="col") #{x[3]}
+        td(scope="col") #{x[4]}
