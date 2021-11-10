@@ -135,7 +135,7 @@ router.post('/main',
     sql = sql + where + query.join(' AND ')
   }
 
-  sql = sql + ' ORDER BY car_year LIMIT 100; ';
+  sql = sql + ' ORDER BY car_year LIMIT 10000; ';
   console.log(sql)
 
   const result = await db.query({
