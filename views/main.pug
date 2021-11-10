@@ -83,6 +83,8 @@ block content
 
   hr
 
+  p Found #{rows.length} entries.
+
 
   table(class="table table-striped table-hover table-sm")
     tr
@@ -100,7 +102,7 @@ block content
       tr
         th(scope="col") #{i}
         td(scope="col")
-          a(href=biluppgifter_link + x[0]) #{x[0]}
+          a(href=biluppgifter_link + x[0], target="_blank") #{x[0]}
         td(scope="col") #{x[1]}
         td(scope="col") #{x[2]}
         td(scope="col") #{x[3]}
