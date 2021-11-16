@@ -1,15 +1,13 @@
 
 exports.users = [{
-   username: 'abc',
-   password: 'abcd'
+   username: process.env.BIL_USER,
+   digest: process.env.BIL_PASSWD
    }]
 
-exports.checkSignIn = function (req, res){
-   if(req.session.user){
-      next();     //If session exists, proceed to page
-   } else {
-      var err = new Error('Not logged in!');
-      console.log(req.session.user);
-      next(err);  //Error, trying to access unauthorized page!
-   }
-}
+exports.protected = function (req, res, next) {
+  if (req.session.loggedIn) {
+    next()
+  } else {
+    return res.redirect('login')
+  }
+};

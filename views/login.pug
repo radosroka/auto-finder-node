@@ -3,10 +3,7 @@ extends layout
 block content
   -data = data || {}
 
-  if errors
-    ul.my-errors
-      for error in errors
-        li= error.msg
+
 
   form(action="./login" method="POST" class="form-registration")
     label(for="logname") Log Name:
@@ -26,6 +23,13 @@ block content
       class="form-control"
       value=data.passwd
     )
+
+    hr
+
+    if errors
+      ul.my-errors
+        for error in errors
+          li= error
 
     input(
       type="submit"

@@ -5,6 +5,9 @@ const db = require('../db/pg')
 
 exports.get = async function (req, res) {
 
+  console.log(req.session.loggedIn)
+  console.log(req.session.user)
+
   var sql = 'SELECT * FROM my_view '
   var where = " WHERE "
   var query = []
@@ -61,7 +64,7 @@ exports.get = async function (req, res) {
     text: sql,
   });
 
-  res.render('query', {
+  return res.render('query', {
     title: 'Query Table',
     data: req.body,
     rows: result.rows,
@@ -122,5 +125,5 @@ exports.post =  function (req, res) {
     qs = 'query?query='
   }
 
-  res.redirect(qs)
+  return res.redirect(qs)
 };
