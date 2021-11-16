@@ -8,14 +8,14 @@ block content
       for error in errors
         li= error.msg
 
-  form(action="." method="POST" class="form-registration")
-    label(for="username") User Name:
+  form(action="./login" method="POST" class="form-registration")
+    label(for="logname") Log Name:
     input(
       type="text"
-      id="username"
-      name="usernane"
+      id="logname"
+      name="logname"
       class="form-control"
-      value=data.username
+      value=data.logname
     )
 
     label(for="passwd") Password:
