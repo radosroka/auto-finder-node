@@ -24,7 +24,7 @@ app.set('trust proxy', 1) // trust first proxy
 app.use(cookieParser())
 
 var cookie_secure = false
-if (process.env.HTTPS) {
+if (process.env.HTTPS === 'yes') {
   cookie_secure = true
 }
 
