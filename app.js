@@ -22,11 +22,17 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.set('trust proxy', 1) // trust first proxy
 app.use(cookieParser())
+
+var cookie_secure = false
+if (process.env.HTTPS) {
+  cookie_secure = true
+}
+
 app.use(session({
   secret: process.env.COOKIE_SECRET,
   resave: false,
   saveUninitialized: true,
-  cookie: { maxAge: 1000 * 60 * 60 * 24, secure: false }
+  cookie: { maxAge: 1000 * 60 * 60 * 24, secure: cookie_secure }
 }))
 
 app.use('/', routes);
