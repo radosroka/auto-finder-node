@@ -5,9 +5,6 @@ const db = require('../db/pg')
 
 exports.get = async function (req, res) {
 
-  console.log(req.session.loggedIn)
-  console.log(req.session.user)
-
   var sql = 'SELECT * FROM my_view '
   var where = " WHERE "
   var query = []

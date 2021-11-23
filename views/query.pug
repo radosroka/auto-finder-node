@@ -85,25 +85,60 @@ block content
 
   p Found #{rows.length} entries.
 
+  - var biluppgifter_link = 'https://biluppgifter.se/fordon/'
+  - var onePage = 100
+  - var pages = 1
+  - if (rows.length > onePage) { pages += Math.floor( rows.length / onePage) }
+  - pages = new Array(pages).fill(1).map( (_, i) => i+1 )
 
-  table(class="table table-striped table-hover table-sm")
-    tr
-      th(scope="col") #
-      th(scope="col") car_plate
-      th(scope="col") car_model
-      th(scope="col") type_name
-      th(scope="col") car_color
-      th(scope="col") car_year
+  - var _hidden = false
+  for page in pages
 
-    - var biluppgifter_link = 'https://biluppgifter.se/fordon/'
-    - var i = 0
-    for x in rows
-      - i = i + 1
+
+    if (page) == 2
+      - _hidden = true
+
+    p(hidden=_hidden) PAGE #{page}
+
+    table(class="table table-striped table-hover table-sm" hidden=_hidden)
+
       tr
-        th(scope="col") #{i}
-        td(scope="col")
-          a(href=biluppgifter_link + x[0], target="_blank") #{x[0]}
-        td(scope="col") #{x[1]}
-        td(scope="col") #{x[2]}
-        td(scope="col") #{x[3]}
-        td(scope="col") #{x[4]}
+        th(scope="col") #
+        th(scope="col") car_plate
+        th(scope="col") car_model
+        th(scope="col") type_name
+        th(scope="col") car_color
+        th(scope="col") car_year
+
+        - var i = 0
+        for x in rows.slice((page-1) * onePage, (page-1) * onePage + onePage )
+          - i = i + 1
+          tr
+            th(scope="col") #{(page-1) * onePage + i}
+            td(scope="col")
+              a(href=biluppgifter_link + x[0], target="_blank") #{x[0]}
+            td(scope="col") #{x[1]}
+            td(scope="col") #{x[2]}
+            td(scope="col") #{x[3]}
+            td(scope="col") #{x[4]}
+
+
+  nav(aria-label="...")
+    ul(class=" flex-wrap pagination pagination-flush pagination-gap")
+      li(class="page-item disabled")
+        a(class="page-link" href="#" tabindex="-1") Previous
+
+      - var li_class = "page-item"
+      - var active = li_class + " active"
+      for page in pages
+        if (page) == 1
+          li(class=active)
+            a(class="page-link" href="#") #{page}
+              span(class="sr-only") (current)
+        else
+          li(class=li_class)
+            a(class="page-link" href="#") #{page}
+
+
+      li(class="page-item")
+        a(class="page-link" href="#") Next
