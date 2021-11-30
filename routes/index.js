@@ -3,6 +3,7 @@ const Router = require('express-promise-router')
 
 const router =  new Router()
 
+const lists = require('./lists')
 const login = require('./login')
 const query = require('./query')
 const user = require('../user/user')
@@ -16,6 +17,7 @@ router.all('/main', (req, res) => {
   return res.redirect('query?query=limit%3D100');
 });
 
+router.post('/lists', user.protected, lists.manage)
 
 router.get('/login', login.get)
 router.post('/login', login.post)

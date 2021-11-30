@@ -1,7 +1,8 @@
 const { check, validationResult } = require('express-validator')
 const Router = require('express-promise-router')
-const db = require('../db/pg')
 
+const db = require('../db/pg')
+const lists = require('./lists')
 
 exports.get = async function (req, res) {
 
@@ -66,6 +67,8 @@ exports.get = async function (req, res) {
 
   return res.render('query', {
     title: 'Query Table',
+    session: req.session,
+    lists: lists.getAllByUser(req.session.user),
     data: req.body,
     rows: result.rows,
   });

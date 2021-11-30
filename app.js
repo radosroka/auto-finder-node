@@ -7,10 +7,13 @@ const cookieParser = require('cookie-parser')
 const routes = require('./routes/index');
 
 const db = require('./db/pg')
+const user = require('./user/user')
 
 db.client.connect();
 
 const app = express();
+
+user.loadUsers(db);
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');

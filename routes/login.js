@@ -21,10 +21,14 @@ exports.post = function (req, res) {
     var digest = hash.digest('hex')
 
     auth.users.filter( function(user) {
-      if (user.username === name && user.digest === digest) {
-        req.session.loggedIn = true
-        req.session.user = name;
 
+      console.log(name, digest)
+      console.log(user)
+
+      if (user.user_name === name && user.digest === digest) {
+        req.session.loggedIn = true
+        req.session.user = name
+        req.session.user_id = user.user_id
       }
     });
 
