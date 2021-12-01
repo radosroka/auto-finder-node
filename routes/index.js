@@ -18,6 +18,7 @@ router.all('/main', (req, res) => {
 });
 
 router.post('/lists', user.protected, lists.manage)
+router.get('/show', user.protected, lists.show)
 
 router.get('/login', login.get)
 router.post('/login', login.post)

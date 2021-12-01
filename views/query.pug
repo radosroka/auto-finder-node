@@ -3,67 +3,67 @@ extends layout
 block content
   -data = data || {}
 
-  hr
-
-  form(action="/query" method="POST" class="form-registration")
-    div(class="container")
-      div(class="row")
-        div(class="col-sm")
-          label(for="car_plate") Car Plate:
-          input(
-            type="text"
-            id="car_plate"
-            name="car_plate"
-            class="form-control"
-            value=data.car_plate
-          )
-
-          label(for="car_model") Car Model:
-          input(
-            type="text"
-            id="car_model"
-            name="car_model"
-            class="form-control"
-            value=data.car_model
-            )
-
-          label(for="type_name") Type Name:
-          input(
-            type="text"
-            id="type_name"
-            name="type_name"
-            class="form-control"
-            value=data.type_name
-            )
-
-        div(class="col-sm")
-          label(for="car_color") Car Color:
-          input(
-            type="text"
-            id="car_color"
-            name="car_color"
-            class="form-control"
-            value=data.car_color
-            )
-
-          div
-            label(for="car_year_from") Car Year From:
+  if searchForm
+    hr
+    form(action="/query" method="POST" class="form-registration")
+      div(class="container")
+        div(class="row")
+          div(class="col-sm")
+            label(for="car_plate") Car Plate:
             input(
               type="text"
-              id="car_year_from"
-              name="car_year_from"
+              id="car_plate"
+              name="car_plate"
               class="form-control"
-              value=data.car_year_from
+              value=data.car_plate
+            )
+
+            label(for="car_model") Car Model:
+            input(
+              type="text"
+              id="car_model"
+              name="car_model"
+              class="form-control"
+              value=data.car_model
+            )
+
+            label(for="type_name") Type Name:
+            input(
+              type="text"
+              id="type_name"
+              name="type_name"
+              class="form-control"
+              value=data.type_name
+            )
+
+          div(class="col-sm")
+            label(for="car_color") Car Color:
+            input(
+              type="text"
+              id="car_color"
+              name="car_color"
+              class="form-control"
+              value=data.car_color
+            )
+
+            div
+              label(for="car_year_from") Car Year From:
+              input(
+                type="text"
+                id="car_year_from"
+                name="car_year_from"
+                class="form-control"
+                value=data.car_year_from
               )
 
 
-            label(for="car_year_to") Car Year To:
-            input(
-              type="text"
-              id="car_year_to"
-              name="car_year_to"
-              class="form-control"
-              value=data.car_year_to
+              label(for="car_year_to") Car Year To:
+              input(
+                type="text"
+                id="car_year_to"
+                name="car_year_to"
+                class="form-control"
+                value=data.car_year_to
               )
 
       hr

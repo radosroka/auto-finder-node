@@ -39,9 +39,10 @@ html(style="padding: 2%")
                       form(action="./add-list" method="POST" class="d-flex")
                         input(class="form-control me-2" type="search" placeholder="Add new +" aria-label="add-new")
                         button(class="btn btn-outline-success" type="submit") Add
-                  for l in lists
+
+                  for l in custom_lists
                     li
-                      a(class="dropdown-item" href="#") #{l[0]}
+                      a(class="dropdown-item" href="/show?listid=" + l[0] + "&listname=" + l[1] target="_blank") #{l[1]}
 
               li(class="nav-item")
                 a(class="nav-link" href="/logout") Log out

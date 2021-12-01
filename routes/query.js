@@ -6,9 +6,6 @@ const lists = require('./lists')
 
 exports.get = async function (req, res) {
 
-  console.log(req.session.loggedIn)
-  console.log(req.session.user)
-
   var sql = 'SELECT * FROM my_view '
   var where = " WHERE "
   var query = []
@@ -50,7 +47,7 @@ exports.get = async function (req, res) {
     sql = sql + where + query.join(' AND ')
   }
 
-  var limit = '10000'
+  var limit = '10'
 
   if (qs.has('limit')) {
     limit = qs.get('limit')
@@ -65,10 +62,13 @@ exports.get = async function (req, res) {
     text: sql,
   });
 
+  const custom = await lists.getAllByUser(req.session.user)
+
   return res.render('query', {
     title: 'Query Table',
+    searchForm: true,
     session: req.session,
-    lists: lists.getAllByUser(req.session.user),
+    custom_lists: custom,
     data: req.body,
     rows: result.rows,
   });
