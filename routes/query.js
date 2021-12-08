@@ -2,7 +2,7 @@ const { check, validationResult } = require('express-validator')
 const Router = require('express-promise-router')
 
 const db = require('../db/pg')
-const lists = require('./lists')
+const lists = require('./manage_lists')
 
 exports.get = async function (req, res) {
 
@@ -47,10 +47,11 @@ exports.get = async function (req, res) {
     sql = sql + where + query.join(' AND ')
   }
 
-  var limit = '10'
+  var limit = '1000'
 
   if (qs.has('limit')) {
     limit = qs.get('limit')
+    req.body.limit = qs.get('limit')
   }
 
   sql = sql + ' ORDER BY car_year LIMIT ' + limit + ';';
@@ -62,7 +63,7 @@ exports.get = async function (req, res) {
     text: sql,
   });
 
-  const custom = await lists.getAllByUser(req.session.user)
+  const custom = await lists.getAllByUser(req.session.user_id)
 
   return res.render('query', {
     title: 'Query Table',
@@ -119,6 +120,12 @@ exports.post =  function (req, res) {
 
   if (! (car_year_to === '')) {
     qs.push(`car_year_to=${car_year_to}`)
+  }
+
+  const limit = req.body.limit;
+
+  if (! (limit === '')) {
+    qs.push(`limit=${limit}`)
   }
 
 
