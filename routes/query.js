@@ -47,7 +47,7 @@ exports.get = async function (req, res) {
     sql = sql + where + query.join(' AND ')
   }
 
-  var limit = '1000'
+  var limit = '10000'
 
   if (qs.has('limit')) {
     limit = qs.get('limit')
