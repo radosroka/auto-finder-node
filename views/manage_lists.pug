@@ -55,7 +55,7 @@ block content
     - var i = 0
     for x in rows
       - i = i + 1
-      tr
+      tr(class="clicable-query-row")
         th(scope="col") #{i}
         td(scope="col")
           a(href="/manage_list_content?list_id=" + x[0], target="_blank") #{x[1]}
