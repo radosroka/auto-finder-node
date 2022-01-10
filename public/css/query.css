@@ -1,0 +1,22 @@
+#context_menu_lists {
+    position: absolute;
+    z-index: 10000;
+    width: 150px;
+    display: none;
+    background: #333741;
+}
+
+#context_menu_lists .item {
+    padding: 8px 10px;
+    color: #EEE;
+    cusor: pointer;
+    border-radius: inherit;
+}
+
+#context_menu_lists.visible {
+    display: block;
+}
+
+#context_menu_lists .item:hover {
+    color: red;
+}

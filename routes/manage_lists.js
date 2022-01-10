@@ -42,6 +42,28 @@ addUserList = async function (list_name, user_id) {
 
 };
 
+deleteFromList = async function (list_id, car_id) {
+
+  var sql = 'DELETE FROM list_items WHERE list_id = ' + list_id + ' AND car_id=' + car_id + ';'
+
+  const result = await db.query({
+    rowMode: 'array',
+    text: sql,
+  });
+};
+
+addToList = async function (list_id, car_id) {
+
+  var sql = 'INSERT INTO list_items(list_id, car_id) VALUES ' +
+      '(\'' + list_id + '\',' + car_id + ');'
+
+  const result = await db.query({
+    rowMode: 'array',
+    text: sql,
+  });
+
+};
+
 
 exports.manage_lists_get = async function (req, res) {
 
@@ -91,27 +113,26 @@ exports.manage_lists_post = async function (req, res) {
 
 exports.manage_list_content_get = async function (req, res) {
 
-  var list_id = req.query.list_id
   var user = req.session.user
   var user_id = req.session.user_id
 
-  const list_res = await db.query({
-    rowMode: 'array',
-    text: 'SELECT list_name FROM lists WHERE list_id = ' + list_id + ';',
-  });
+  var operation = req.query.operation
+  var list_id = req.query.list_id
+  var car_id = req.query.car_id
 
-  console.log(list_res.rows)
-
-  var list_name = list_res.rows[0]
-
-  console.log(list_name)
-
-  if (!list_name) {
-    res.redirect('/error')
+  if (operation === 'delete' && list_id && car_id) {
+    await deleteFromList(list_id, car_id)
+    return res.redirect('/manage_list_content?list_id=' + list_id)
   }
 
-  var sql = 'SELECT car_plate,car_model,type_name,car_color,car_year ' +
+  if (operation === 'add' && list_id && car_id) {
+    await addToList(list_id, car_id)
+    return res.redirect('/manage_list_contents?list_id=' + list_id)
+  }
+
+  const sql = 'SELECT car_plate,car_model,type_name,car_color,car_year,list_id,car_id ' +
       'FROM list_view WHERE user_id = ' + user_id + ' AND list_id = ' + list_id + ';'
+
 
   const custom = await exports.getAllByUser(user_id)
 
@@ -120,11 +141,12 @@ exports.manage_list_content_get = async function (req, res) {
     text: sql,
   });
 
-  return res.render('query', {
-    title: 'List ' + list_name,
+  return res.render('manage_list_content', {
+    title: 'List Content Query',
+    //searchForm: false,
     session: req.session,
     custom_lists: custom,
-    data: req.body,
+    //data: req.body,
     rows: result.rows,
   });
 };
@@ -136,8 +158,6 @@ exports.manage_list_content_post = async function (req, res) {
   var user = req.session.user
   var user_id = req.session.user_id
 
-  var sql = 'SELECT car_plate,car_model,type_name,car_color,car_year ' +
-      'FROM list_view WHERE user_id = ' + user_id + ' AND list_id = ' + list_id + ';'
 
   const custom = await exports.getAllByUser(user_id)
 

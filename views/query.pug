@@ -3,6 +3,9 @@ extends layout
 block content
   -data = data || {}
 
+  link(rel='stylesheet', href='/css/query.css')
+  script(src='/js/query-selector.js')
+
   if searchForm
     hr
     form(action="/query" method="POST" class="form-registration")
@@ -93,6 +96,11 @@ block content
 
   hr
 
+  if searchForm
+    div(id="context_menu_lists")
+      for l in custom_lists
+        div(class="item" list_id=l[0]) #{l[1]} (#{l[2]})
+
   p Found #{rows.length} entries.
 
 
@@ -106,10 +114,14 @@ block content
       th(scope="col") car_year
 
     - var biluppgifter_link = 'https://biluppgifter.se/fordon/'
-    - var i = 0
+    - var threshold = 24191006;
+    - var i = 0;
+    - var clickable_class = "clickable-query-row";
     for x in rows
       - i = i + 1
-      tr(class="clickable-query-row")
+      - var tr_class = clickable_class
+      - if (x[5] > threshold) tr_class += " table-success"
+      tr(class=tr_class id=x[5])
         th(scope="col") #{i}
         td(scope="col")
           a(href=biluppgifter_link + x[0], target="_blank") #{x[0]}
