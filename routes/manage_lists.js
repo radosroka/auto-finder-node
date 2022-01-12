@@ -127,7 +127,7 @@ exports.manage_list_content_get = async function (req, res) {
 
   if (operation === 'add' && list_id && car_id) {
     await addToList(list_id, car_id)
-    return res.redirect('/manage_list_contents?list_id=' + list_id)
+    return res.redirect('/manage_list_content?list_id=' + list_id)
   }
 
   const sql = 'SELECT car_plate,car_model,type_name,car_color,car_year,list_id,car_id ' +
