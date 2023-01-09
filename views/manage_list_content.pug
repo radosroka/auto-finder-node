@@ -16,6 +16,10 @@ block content
       th(scope="col") type_name
       th(scope="col") car_color
       th(scope="col") car_year
+      th(scope="col") owner_name
+      th(scope="col") owner_age
+      th(scope="col") owner_address
+      th(scope="col") owner_phone
       th(scope="col") operation
 
     - var biluppgifter_link = 'https://biluppgifter.se/fordon/'
@@ -34,6 +38,11 @@ block content
         td(scope="col") #{x[2]}
         td(scope="col") #{x[3]}
         td(scope="col") #{x[4]}
+        td(scope="col") #{x[5]}
+          a(href="x[11]")
+        td(scope="col") #{x[6]}
+        td(scope="col") #{x[7]} #{x[8]} #{x[9]}
+        td(scope="col") #{x[10]}
         td(scope="col")
-          a(href="/manage_list_content?operation=delete&list_id=" + x[5] + "&car_id=" + x[6])
+          a(href="/manage_list_content?operation=delete&list_id=" + x[12] + "&car_id=" + x[13])
             button(type="submit" class="btn btn-sm btn-danger") Delete

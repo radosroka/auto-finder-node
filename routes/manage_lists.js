@@ -130,8 +130,8 @@ exports.manage_list_content_get = async function (req, res) {
     return res.redirect('/manage_list_content?list_id=' + list_id)
   }
 
-  const sql = 'SELECT car_plate,car_model,type_name,car_color,car_year,list_id,car_id ' +
-      'FROM list_view WHERE user_id = ' + user_id + ' AND list_id = ' + list_id + ';'
+  const sql = 'SELECT car_plate,car_model,type_name,car_color,car_year,owner_name,owner_age,owner_street,owner_postnumber,owner_city,owner_phone,link,list_id,car_id,owner_id' +
+      ' FROM list_view2 WHERE user_id = ' + user_id + ' AND list_id = ' + list_id + ';'
 
 
   const custom = await exports.getAllByUser(user_id)
