@@ -41,7 +41,10 @@ block content
         td(scope="col")
           a(href=x[11], target="_blank") #{x[5]}
         td(scope="col") #{x[6]}
-        td(scope="col") #{x[7]} #{x[8]} #{x[9]}
+        if x[7]
+          td(scope="col") #{x[7]}, #{x[8]} #{x[9]}
+        else
+          td(scope="col") #{x[7]} #{x[8]} #{x[9]}
         td(scope="col") #{x[10]}
         td(scope="col")
           a(href="/manage_list_content?operation=delete&list_id=" + x[12] + "&car_id=" + x[13])
