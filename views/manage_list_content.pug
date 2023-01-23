@@ -49,3 +49,6 @@ block content
         td(scope="col")
           a(href="/manage_list_content?operation=delete&list_id=" + x[12] + "&car_id=" + x[13])
             button(type="submit" class="btn btn-sm btn-danger") Delete
+  if query.list_id 
+    a(href="/manage_list_content?operation=export&list_id=" + query.list_id)
+      button(type="submit" class="btn btn-lg btn-danger") Export

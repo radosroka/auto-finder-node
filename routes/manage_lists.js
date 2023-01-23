@@ -1,4 +1,5 @@
 const db = require('../db/pg')
+const {spawn} = require('child_process');
 
 exports.getAllByUser = async function (user_id) {
 
@@ -64,6 +65,50 @@ addToList = async function (list_id, car_id) {
 
 };
 
+exportList = async function (list_id, user_id) {
+
+  var yourscript = spawn('python3', [ 
+	  		`${process.env.EXPORT_SCRIPT}`,
+  			`${process.env.DB_HOST}`,
+  			`${process.env.DB_USER}`,
+  			`${process.env.DB_USER_PASSWD}`,
+  			`${list_id}`,
+  			`${user_id}`], 
+	  {shell: false});
+
+  yourscript.stdout.on('data', (data) => {
+    console.log(data.toString());
+  });
+
+  yourscript.stderr.on('data', (data) => {
+    console.error(data.toString());
+  });
+
+  yourscript.on('exit', (code) => {
+    console.log(`Child exited with code ${code}`);
+  });
+
+};
+
+
+exportCleanUp = async function () {
+
+  var yourscript = spawn('bash', 
+	  ['rm', '-rf', `$(process.env.FOLDER)` + '/result*'], 
+	  {shell: true});
+
+  yourscript.stdout.on('data', (data) => {
+    console.log(data.toString());
+  });
+
+  yourscript.stderr.on('data', (data) => {
+    console.error(data.toString());
+  });
+
+  yourscript.on('exit', (code) => {
+    console.log(`Child exited with code ${code}`);
+  });
+};
 
 exports.manage_lists_get = async function (req, res) {
 
@@ -75,13 +120,13 @@ exports.manage_lists_get = async function (req, res) {
   var list_name = req.query.list_name
 
   if (operation === 'delete' && list_id) {
-    await deleteListByUser(list_id, user_id)
-    return res.redirect('/manage_lists')
+    await deleteListByUser(list_id, user_id);
+    return res.redirect('/manage_lists');
   }
 
   if (operation === 'add' && list_name) {
-    await addUserList(list_name, user_id)
-    return res.redirect('/manage_lists')
+    await addUserList(list_name, user_id);
+    return res.redirect('/manage_lists');
   }
 
   const custom = await exports.getAllByUser(user_id)
@@ -119,6 +164,8 @@ exports.manage_list_content_get = async function (req, res) {
   var operation = req.query.operation
   var list_id = req.query.list_id
   var car_id = req.query.car_id
+  
+  exportList(list_id, user_id);
 
   if (operation === 'delete' && list_id && car_id) {
     await deleteFromList(list_id, car_id)
@@ -128,6 +175,10 @@ exports.manage_list_content_get = async function (req, res) {
   if (operation === 'add' && list_id && car_id) {
     await addToList(list_id, car_id)
     return res.redirect('/manage_list_content?list_id=' + list_id)
+  }
+
+  if (operation === 'export' && list_id) {
+    return res.download(process.env.FOLDER + '/result-' + list_id + '-' + user_id + '.xlsx');
   }
 
   const sql = 'SELECT car_plate,car_model,type_name,car_color,car_year,owner_name,owner_age,owner_street,owner_postnumber,owner_city,owner_phone,link,list_id,car_id,owner_id' +
@@ -145,8 +196,9 @@ exports.manage_list_content_get = async function (req, res) {
     title: 'List Content Query',
     //searchForm: false,
     session: req.session,
+    query: req.query,
     custom_lists: custom,
-    //data: req.body,
+    data: req.body,
     rows: result.rows,
   });
 };
@@ -169,6 +221,7 @@ exports.manage_list_content_post = async function (req, res) {
   return res.render('query', {
     title: 'List ' + list_name,
     session: req.session,
+    query: req.query,
     custom_lists: custom,
     data: req.body,
     rows: result.rows,
