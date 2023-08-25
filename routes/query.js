@@ -18,18 +18,18 @@ exports.get = async function (req, res) {
   }
 
   if (qs.has('car_model')) {
-    var model = qs.get('car_model').split(" ").join('.*')
-    query.push(` lower(car_model) ~* '.*${model.toLowerCase()}.*' `)
+    var model = qs.get('car_model').split(" ").join('%')
+    query.push(` lower(car_model) LIKE '%${model.toLowerCase()}%' `)
     req.body.car_model = qs.get('car_model')
   }
 
   if (qs.has('type_name')) {
-    query.push(` lower(type_name) ~* '.*${qs.get('type_name').toLowerCase()}.*' `)
+    query.push(` lower(type_name) LIKE '%${qs.get('type_name').toLowerCase()}%' `)
     req.body.type_name = qs.get('type_name')
   }
 
   if (qs.has('car_color')) {
-    query.push(` lower(car_color) ~* '.*${qs.get('car_color').toLowerCase()}.*' `)
+    query.push(` lower(car_color) LIKE '%${qs.get('car_color').toLowerCase()}%' `)
     req.body.car_color = qs.get('car_color')
   }
 
@@ -54,7 +54,11 @@ exports.get = async function (req, res) {
     req.body.limit = qs.get('limit')
   }
 
-  sql = sql + ' ORDER BY car_year LIMIT ' + limit + ';';
+  if (qs.has('car_year_from') || qs.has('car_year_to')) {
+    sql = sql + ' ORDER BY car_year ';
+  }
+	
+  sql = sql + ' LIMIT ' + limit + ';';
 
   console.log(sql)
 
@@ -90,7 +94,7 @@ exports.post =  function (req, res) {
   const car_model = req.body.car_model;
 
   if (! (car_model === '')) {
-    var model = car_model.split(" ").join('.*')
+    var model = car_model.split(" ").join('%')
     qs.push(`car_model=${car_model}`)
   }
 
