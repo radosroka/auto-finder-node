@@ -1,5 +1,4 @@
-const db = require('../db/pg')
-const {spawn} = require('child_process');
+const db = require('../db/sqlite');
 
 exports.getAllByUser = async function (user_id) {
 
@@ -66,28 +65,10 @@ addToList = async function (list_id, car_id) {
 };
 
 exportList = async function (list_id, user_id) {
-
-  var yourscript = spawn('python3', [ 
-	  		`${process.env.EXPORT_SCRIPT}`,
-  			`${process.env.DB_HOST}`,
-  			`${process.env.DB_USER}`,
-  			`${process.env.DB_USER_PASSWD}`,
-  			`${list_id}`,
-  			`${user_id}`], 
-	  {shell: false});
-
-  yourscript.stdout.on('data', (data) => {
-    console.log(data.toString());
-  });
-
-  yourscript.stderr.on('data', (data) => {
-    console.error(data.toString());
-  });
-
-  yourscript.on('exit', (code) => {
-    console.log(`Child exited with code ${code}`);
-  });
-
+  // Export to Excel is not yet implemented for the SQLite version.
+  // The original Python script (gen_excel.py) used a direct PostgreSQL connection.
+  // TODO: replace with a JavaScript-based Excel export (e.g. exceljs).
+  console.warn('exportList: Excel export not available in SQLite mode');
 };
 
 

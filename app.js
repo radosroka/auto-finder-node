@@ -6,7 +6,7 @@ const cookieParser = require('cookie-parser')
 
 const routes = require('./routes/index');
 
-const db = require('./db/pg')
+const db = require('./db/sqlite')
 const user = require('./user/user')
 
 db.client.connect();
@@ -32,7 +32,7 @@ if (process.env.HTTPS === 'yes') {
 }
 
 app.use(session({
-  secret: process.env.COOKIE_SECRET,
+  secret: process.env.COOKIE_SECRET || 'dev-secret-change-me',
   resave: false,
   saveUninitialized: true,
   cookie: { maxAge: 1000 * 60 * 60 * 24, secure: cookie_secure }
