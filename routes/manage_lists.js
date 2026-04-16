@@ -1,4 +1,5 @@
 const db = require('../db/sqlite');
+const ExcelJS = require('exceljs');
 
 exports.getAllByUser = async function (user_id) {
 
@@ -17,17 +18,11 @@ deleteListByUser = async function (list_id, user_id) {
 
   var sql = 'DELETE FROM list_items WHERE list_id = ' + list_id + ';'
 
-  const result = await db.query({
-    rowMode: 'array',
-    text: sql,
-  });
+  await db.query({ rowMode: 'array', text: sql });
 
   sql = 'DELETE FROM lists WHERE list_id = ' + list_id + ' AND user_id = ' + user_id + ';'
 
-  const result2 = await db.query({
-    rowMode: 'array',
-    text: sql,
-  });
+  await db.query({ rowMode: 'array', text: sql });
 };
 
 addUserList = async function (list_name, user_id) {
@@ -35,21 +30,14 @@ addUserList = async function (list_name, user_id) {
   var sql = 'INSERT INTO lists(list_name, user_id) VALUES ' +
       '(\'' + list_name + '\',' + user_id + ');'
 
-  const result = await db.query({
-    rowMode: 'array',
-    text: sql,
-  });
-
+  await db.query({ rowMode: 'array', text: sql });
 };
 
 deleteFromList = async function (list_id, car_id) {
 
   var sql = 'DELETE FROM list_items WHERE list_id = ' + list_id + ' AND car_id=' + car_id + ';'
 
-  const result = await db.query({
-    rowMode: 'array',
-    text: sql,
-  });
+  await db.query({ rowMode: 'array', text: sql });
 };
 
 addToList = async function (list_id, car_id) {
@@ -57,39 +45,63 @@ addToList = async function (list_id, car_id) {
   var sql = 'INSERT INTO list_items(list_id, car_id) VALUES ' +
       '(\'' + list_id + '\',' + car_id + ');'
 
-  const result = await db.query({
-    rowMode: 'array',
-    text: sql,
-  });
-
+  await db.query({ rowMode: 'array', text: sql });
 };
 
-exportList = async function (list_id, user_id) {
-  // Export to Excel is not yet implemented for the SQLite version.
-  // The original Python script (gen_excel.py) used a direct PostgreSQL connection.
-  // TODO: replace with a JavaScript-based Excel export (e.g. exceljs).
-  console.warn('exportList: Excel export not available in SQLite mode');
+exportListToResponse = async function (list_id, user_id, list_name, res) {
+
+  const sql = 'SELECT car_plate, car_model, type_name, car_color, car_year, ' +
+              'owner_name, owner_age, owner_street, owner_postnumber, owner_city, owner_phone, link ' +
+              'FROM list_view2 WHERE user_id = ' + user_id + ' AND list_id = ' + list_id + ';'
+
+  const result = await db.query({ text: sql });
+
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet(list_name || 'List');
+
+  sheet.columns = [
+    { header: 'Car Plate',    key: 'car_plate',        width: 14 },
+    { header: 'Model',        key: 'car_model',        width: 24 },
+    { header: 'Type',         key: 'type_name',        width: 20 },
+    { header: 'Color',        key: 'car_color',        width: 14 },
+    { header: 'Year',         key: 'car_year',         width: 8  },
+    { header: 'Owner',        key: 'owner_name',       width: 24 },
+    { header: 'Age',          key: 'owner_age',        width: 6  },
+    { header: 'Street',       key: 'owner_street',     width: 24 },
+    { header: 'Post Number',  key: 'owner_postnumber', width: 12 },
+    { header: 'City',         key: 'owner_city',       width: 18 },
+    { header: 'Phone',        key: 'owner_phone',      width: 16 },
+    { header: 'Link',         key: 'link',             width: 40 },
+  ];
+
+  // Bold header row
+  sheet.getRow(1).font = { bold: true };
+
+  for (const row of result.rows) {
+    sheet.addRow(row);
+  }
+
+  // Borders on all cells
+  sheet.eachRow((row) => {
+    row.eachCell((cell) => {
+      cell.border = {
+        top:    { style: 'thin' },
+        left:   { style: 'thin' },
+        bottom: { style: 'thin' },
+        right:  { style: 'thin' },
+      };
+      cell.alignment = { horizontal: 'center' };
+    });
+  });
+
+  const filename = `list-${list_id}.xlsx`;
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+  await workbook.xlsx.write(res);
+  res.end();
 };
 
-
-exportCleanUp = async function () {
-
-  var yourscript = spawn('bash', 
-	  ['rm', '-rf', `$(process.env.FOLDER)` + '/result*'], 
-	  {shell: true});
-
-  yourscript.stdout.on('data', (data) => {
-    console.log(data.toString());
-  });
-
-  yourscript.stderr.on('data', (data) => {
-    console.error(data.toString());
-  });
-
-  yourscript.on('exit', (code) => {
-    console.log(`Child exited with code ${code}`);
-  });
-};
 
 exports.manage_lists_get = async function (req, res) {
 
@@ -157,14 +169,14 @@ exports.manage_list_content_get = async function (req, res) {
   }
 
   if (operation === 'export' && list_id) {
-    return res.download(process.env.FOLDER + '/result-' + list_id + '-' + user_id + '.xlsx');
+    const lists = await exports.getAllByUser(user_id)
+    const list = lists.find(l => String(l[0]) === String(list_id))
+    const list_name = list ? list[1] : 'list'
+    return exportListToResponse(list_id, user_id, list_name, res)
   }
-
-  await exportList(list_id, user_id);
 
   const sql = 'SELECT car_plate,car_model,type_name,car_color,car_year,owner_name,owner_age,owner_street,owner_postnumber,owner_city,owner_phone,link,list_id,car_id,owner_id' +
       ' FROM list_view2 WHERE user_id = ' + user_id + ' AND list_id = ' + list_id + ';'
-
 
   const custom = await exports.getAllByUser(user_id)
 
@@ -175,7 +187,6 @@ exports.manage_list_content_get = async function (req, res) {
 
   return res.render('manage_list_content', {
     title: 'List Content Query',
-    //searchForm: false,
     session: req.session,
     query: req.query,
     custom_lists: custom,
@@ -191,15 +202,17 @@ exports.manage_list_content_post = async function (req, res) {
   var user = req.session.user
   var user_id = req.session.user_id
 
-
   const custom = await exports.getAllByUser(user_id)
+
+  const sql = 'SELECT car_plate,car_model,type_name,car_color,car_year,owner_name,owner_age,owner_street,owner_postnumber,owner_city,owner_phone,link,list_id,car_id,owner_id' +
+      ' FROM list_view2 WHERE user_id = ' + user_id + ' AND list_id = ' + list_id + ';'
 
   const result = await db.query({
     rowMode: 'array',
     text: sql,
   });
 
-  return res.render('query', {
+  return res.render('manage_list_content', {
     title: 'List ' + list_name,
     session: req.session,
     query: req.query,
