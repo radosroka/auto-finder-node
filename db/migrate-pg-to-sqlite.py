@@ -242,8 +242,8 @@ def main():
             host=args.pg_host, port=args.pg_port,
             dbname=args.pg_db, user=args.pg_user, password=args.pg_password,
         )
-        # autocommit=True so named cursors work as holdable cursors
-        pg.set_session(readonly=True, autocommit=True)
+        # readonly, autocommit=False (default) — named cursors require a transaction
+        pg.set_session(readonly=True)
     except psycopg2.OperationalError as e:
         sys.exit(f"\nCould not connect to PostgreSQL: {e}")
 
