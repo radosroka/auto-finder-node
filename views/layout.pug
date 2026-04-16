@@ -36,13 +36,13 @@ html(style="padding: 2%")
                   href="#") Lists
                 ul(class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink" style="max-height: 70vh; overflow-y: auto;")
                   li
-                    a(class="dropdown-item" href="/manage_lists" target="_blank") Manage Lists
+                    a(class="dropdown-item" href="/manage_lists") Manage Lists
 
                   hr
 
                   for l in custom_lists
                     li
-                      a(class="dropdown-item" href="/manage_list_content?list_id=" + l[0] target="_blank") #{l[1]} (#{l[2]})
+                      a(class="dropdown-item" href="/manage_list_content?list_id=" + l[0]) #{l[1]} (#{l[2]})
 
               li(class="nav-item")
                 a(class="nav-link" href="/logout") Log out

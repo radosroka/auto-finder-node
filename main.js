@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, shell } = require('electron');
 const path = require('path');
 const crypto = require('crypto');
 
@@ -33,6 +33,25 @@ function createWindow(port) {
 
   mainWindow.loadURL(`http://127.0.0.1:${port}`);
   mainWindow.webContents.openDevTools();
+
+  // External links open in the system browser; internal links stay in the app
+  const internalBase = `http://127.0.0.1:${port}`;
+
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith(internalBase)) {
+      mainWindow.loadURL(url);
+    } else {
+      shell.openExternal(url);
+    }
+    return { action: 'deny' };
+  });
+
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (!url.startsWith(internalBase)) {
+      event.preventDefault();
+      shell.openExternal(url);
+    }
+  });
 
   mainWindow.on('closed', () => {
     mainWindow = null;
