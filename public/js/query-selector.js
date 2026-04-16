@@ -14,6 +14,10 @@ $(document).ready(function() {
         $('#context_menu_lists').css('display', 'none')
     });
 
+    $('#context_menu_lists').click(function(e){
+        e.stopPropagation();
+    });
+
     $('div.item').click(function (){
         const list_id = $(this).attr('list_id')
         for (index in selected_rows) {
@@ -70,6 +74,10 @@ $(document).ready(function() {
 
         var x = e.pageX;
         var y = e.pageY;
+        var menuHeight = Math.min($('#context_menu_lists').children().length * 36, 400);
+        if (y + menuHeight > $(window).height() + $(window).scrollTop()) {
+            y = y - menuHeight;
+        }
 
         $('#context_menu_lists').css("left", x.toString() + "px")
         $('#context_menu_lists').css("top", y.toString() + "px")

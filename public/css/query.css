@@ -4,6 +4,8 @@
     width: 150px;
     display: none;
     background: #333741;
+    max-height: 400px;
+    overflow-y: auto;
 }
 
 #context_menu_lists .item {
