@@ -1,5 +1,6 @@
 const { app, BrowserWindow, shell, dialog } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const crypto = require('crypto');
 
 let mainWindow;
@@ -71,9 +72,27 @@ function createWindow(port) {
   });
 }
 
+function ensureDatabase() {
+  const userDataDb = path.join(app.getPath('userData'), 'biluppgifter.db');
+  if (!fs.existsSync(userDataDb)) {
+    // In a packaged app, extraResources land in process.resourcesPath
+    const bundledDb = app.isPackaged
+      ? path.join(process.resourcesPath, 'biluppgifter.db')
+      : path.join(__dirname, 'db', 'biluppgifter.db');
+    if (fs.existsSync(bundledDb)) {
+      fs.mkdirSync(path.dirname(userDataDb), { recursive: true });
+      fs.copyFileSync(bundledDb, userDataDb);
+      console.log('Database initialised from bundle:', userDataDb);
+    } else {
+      console.warn('No bundled database found — starting with empty database.');
+    }
+  }
+  return userDataDb;
+}
+
 app.whenReady().then(async () => {
   const port = 3737;
-  const dbPath = path.join(app.getPath('userData'), 'biluppgifter.db');
+  const dbPath = ensureDatabase();
 
   try {
     await startExpressServer(port, dbPath);
