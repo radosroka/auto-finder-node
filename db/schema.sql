@@ -8,6 +8,11 @@ CREATE TABLE IF NOT EXISTS users (
     user_passwd_hash TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS types (
+    type_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+    type_name TEXT NOT NULL UNIQUE
+);
+
 CREATE TABLE IF NOT EXISTS cars (
     car_id    INTEGER PRIMARY KEY AUTOINCREMENT,
     car_plate TEXT NOT NULL UNIQUE,
@@ -55,8 +60,9 @@ CREATE TABLE IF NOT EXISTS link_to_merinfo (
 -- ── Views ───────────────────────────────────────────────────────────────────
 
 CREATE VIEW IF NOT EXISTS my_view AS
-    SELECT car_id, car_plate, car_model, type_name, car_color, car_year
-    FROM cars;
+    SELECT c.car_id, c.car_plate, c.car_model, t.type_name, c.car_color, c.car_year
+    FROM cars c
+    LEFT JOIN types t ON c.type_id = t.type_id;
 
 CREATE VIEW IF NOT EXISTS list_count_view AS
     SELECT
@@ -72,7 +78,7 @@ CREATE VIEW IF NOT EXISTS list_view2 AS
     SELECT
         c.car_plate,
         c.car_model,
-        c.type_name,
+        t.type_name,
         c.car_color,
         c.car_year,
         o.owner_name,
@@ -89,7 +95,8 @@ CREATE VIEW IF NOT EXISTS list_view2 AS
     FROM list_items li
     JOIN  cars  c  ON li.car_id  = c.car_id
     JOIN  lists l  ON li.list_id = l.list_id
-    LEFT JOIN owner_cars       oc ON c.car_id   = oc.car_id
+    LEFT JOIN types            t  ON c.type_id   = t.type_id
+    LEFT JOIN owner_cars       oc ON c.car_id    = oc.car_id
     LEFT JOIN owners            o ON oc.owner_id = o.owner_id
     LEFT JOIN link_to_merinfo  lm ON lm.car_id   = c.car_id
                                   AND lm.owner_id = o.owner_id;
