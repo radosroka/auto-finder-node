@@ -38,6 +38,16 @@ app.use(session({
   cookie: { maxAge: 1000 * 60 * 60 * 24, secure: cookie_secure }
 }))
 
+// TODO: remove — auto-login as lubo for development
+app.use((req, res, next) => {
+  if (!req.session.loggedIn) {
+    req.session.loggedIn = true;
+    req.session.user = 'lubo';
+    req.session.user_id = 2;
+  }
+  next();
+});
+
 app.use('/', routes);
 
 
