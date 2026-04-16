@@ -2,8 +2,11 @@
 """
 Migrate PostgreSQL biluppgifter database → SQLite
 
-Columns are auto-detected from PostgreSQL — no hardcoded schema assumptions.
-The script also prints a column map so you can see exactly what landed in SQLite.
+Memory-efficient: rows are streamed from PostgreSQL in small batches using a
+server-side cursor and written to SQLite immediately — only CHUNK_SIZE rows
+are ever held in RAM at once, regardless of table size.
+
+Columns are auto-detected from PostgreSQL so no hardcoded schema assumptions.
 
 Usage:
     python3 db/migrate-pg-to-sqlite.py [options]
@@ -15,6 +18,7 @@ Options:
     --pg-user      PG user        (env: DB_USER)
     --pg-password  PG password    (env: DB_USER_PASSWD)
     --output       SQLite path    (env: DB_PATH,        default: ./biluppgifter.db)
+    --chunk-size   Rows per batch (default: 500)
     --dry-run      Print schema + row counts, don't write SQLite
 
 Dependencies:
@@ -35,7 +39,7 @@ except ImportError:
     sys.exit("Missing dependency: run  pip install psycopg2-binary")
 
 
-# ── Tables to migrate (in FK-safe order) ─────────────────────────────────────
+# ── Tables to migrate (FK-safe order) ────────────────────────────────────────
 
 TABLES = [
     "users",
@@ -49,111 +53,27 @@ TABLES = [
 
 # PostgreSQL type → SQLite affinity
 PG_TO_SQLITE = {
-    "integer":           "INTEGER",
-    "bigint":            "INTEGER",
-    "smallint":          "INTEGER",
-    "serial":            "INTEGER",
-    "bigserial":         "INTEGER",
-    "boolean":           "INTEGER",
-    "real":              "REAL",
-    "double precision":  "REAL",
-    "numeric":           "REAL",
-    "decimal":           "REAL",
-    "text":              "TEXT",
-    "varchar":           "TEXT",
-    "character varying": "TEXT",
-    "char":              "TEXT",
-    "character":         "TEXT",
-    "date":              "TEXT",
-    "timestamp":         "TEXT",
+    "integer":                     "INTEGER",
+    "bigint":                      "INTEGER",
+    "smallint":                    "INTEGER",
+    "serial":                      "INTEGER",
+    "bigserial":                   "INTEGER",
+    "boolean":                     "INTEGER",
+    "real":                        "REAL",
+    "double precision":            "REAL",
+    "numeric":                     "REAL",
+    "decimal":                     "REAL",
+    "text":                        "TEXT",
+    "varchar":                     "TEXT",
+    "character varying":           "TEXT",
+    "char":                        "TEXT",
+    "character":                   "TEXT",
+    "date":                        "TEXT",
+    "timestamp":                   "TEXT",
     "timestamp without time zone": "TEXT",
     "timestamp with time zone":    "TEXT",
-    "bytea":             "BLOB",
+    "bytea":                       "BLOB",
 }
-
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
-def ok(msg):    print(f"  \u2713 {msg}")
-def info(msg):  print(f"  \u00b7 {msg}")
-def warn(msg):  print(f"  ! {msg}")
-def header(msg):print(f"\n{msg}")
-
-
-def pg_columns(cur, table):
-    """Return list of column dicts for a table, using a plain (tuple) cursor."""
-    cur.execute("""
-        SELECT column_name,
-               data_type,
-               is_nullable,
-               column_default
-        FROM information_schema.columns
-        WHERE table_schema = 'public'
-          AND table_name   = %s
-        ORDER BY ordinal_position
-    """, (table,))
-    result = []
-    for col_name, pg_type, nullable, default in cur.fetchall():
-        sqlite_type = PG_TO_SQLITE.get(pg_type.lower(), "TEXT")
-        result.append({
-            "name":     col_name,
-            "type":     sqlite_type,
-            "nullable": nullable == "YES",
-            "default":  default,
-        })
-    return result
-
-
-def pg_primary_key(cur, table):
-    """Return list of PK column names for a table, using a plain (tuple) cursor."""
-    cur.execute("""
-        SELECT kcu.column_name
-        FROM information_schema.table_constraints tc
-        JOIN information_schema.key_column_usage kcu
-          ON tc.constraint_name = kcu.constraint_name
-         AND tc.table_schema    = kcu.table_schema
-        WHERE tc.constraint_type = 'PRIMARY KEY'
-          AND tc.table_schema    = 'public'
-          AND tc.table_name      = %s
-        ORDER BY kcu.ordinal_position
-    """, (table,))
-    return [row[0] for row in cur.fetchall()]
-
-
-def build_create_table(table, columns, pk_cols):
-    """Generate CREATE TABLE IF NOT EXISTS DDL for SQLite."""
-    col_defs = []
-    for c in columns:
-        parts = [f'"{c["name"]}"', c["type"]]
-        if not c["nullable"]:
-            parts.append("NOT NULL")
-        col_defs.append(" ".join(parts))
-
-    if pk_cols:
-        quoted = ", ".join(f'"{c}"' for c in pk_cols)
-        col_defs.append(f"PRIMARY KEY ({quoted})")
-
-    body = ",\n    ".join(col_defs)
-    return f'CREATE TABLE IF NOT EXISTS "{table}" (\n    {body}\n);'
-
-
-def copy_table(pg_rows, sqlite_conn, table, col_names):
-    if not pg_rows:
-        info(f"{table}: 0 rows (skipped)")
-        return
-
-    quoted_cols  = ", ".join(f'"{c}"' for c in col_names)
-    placeholders = ", ".join("?" * len(col_names))
-    sql = f'INSERT OR IGNORE INTO "{table}" ({quoted_cols}) VALUES ({placeholders})'
-
-    rows = [tuple(row[c] for c in col_names) for row in pg_rows]
-    sqlite_conn.executemany(sql, rows)
-    ok(f"{table}: {len(rows)} rows copied")
-
-
-# ── Static views (reference well-known column names from the app) ─────────────
-# These are created after the tables; if your column names differ the view
-# creation will fail gracefully with a warning rather than aborting the migration.
 
 VIEWS = {
     "my_view": """
@@ -191,6 +111,99 @@ VIEWS = {
 }
 
 
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def ok(msg):     print(f"  \u2713 {msg}")
+def warn(msg):   print(f"  ! {msg}")
+def header(msg): print(f"\n{msg}")
+
+
+def pg_columns(cur, table):
+    """Introspect column names/types from information_schema (plain cursor)."""
+    cur.execute("""
+        SELECT column_name, data_type, is_nullable
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name   = %s
+        ORDER BY ordinal_position
+    """, (table,))
+    result = []
+    for col_name, pg_type, nullable in cur.fetchall():
+        result.append({
+            "name":     col_name,
+            "type":     PG_TO_SQLITE.get(pg_type.lower(), "TEXT"),
+            "nullable": nullable == "YES",
+        })
+    return result
+
+
+def pg_primary_key(cur, table):
+    """Return ordered list of PK column names (plain cursor)."""
+    cur.execute("""
+        SELECT kcu.column_name
+        FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu
+          ON tc.constraint_name = kcu.constraint_name
+         AND tc.table_schema    = kcu.table_schema
+        WHERE tc.constraint_type = 'PRIMARY KEY'
+          AND tc.table_schema    = 'public'
+          AND tc.table_name      = %s
+        ORDER BY kcu.ordinal_position
+    """, (table,))
+    return [row[0] for row in cur.fetchall()]
+
+
+def build_create_table(table, columns, pk_cols):
+    col_defs = []
+    for c in columns:
+        parts = [f'"{c["name"]}"', c["type"]]
+        if not c["nullable"]:
+            parts.append("NOT NULL")
+        col_defs.append("  " + " ".join(parts))
+    if pk_cols:
+        quoted = ", ".join(f'"{c}"' for c in pk_cols)
+        col_defs.append(f"  PRIMARY KEY ({quoted})")
+    body = ",\n".join(col_defs)
+    return f'CREATE TABLE IF NOT EXISTS "{table}" (\n{body}\n);'
+
+
+def stream_table(pg_conn, table, col_names, chunk_size):
+    """
+    Yield tuples in batches using a PostgreSQL server-side cursor.
+    Only `chunk_size` rows are fetched from the server at a time.
+    """
+    quoted = ", ".join(f'"{c}"' for c in col_names)
+    # Named cursor → server-side cursor; with autocommit=True psycopg2
+    # automatically adds WITH HOLD so it survives outside a transaction.
+    with pg_conn.cursor(f"migrate_{table}") as cur:
+        cur.itersize = chunk_size
+        cur.execute(f'SELECT {quoted} FROM "{table}"')
+        while True:
+            batch = cur.fetchmany(chunk_size)
+            if not batch:
+                break
+            yield batch
+
+
+def copy_table(pg_conn, sqlite_conn, table, col_names, chunk_size):
+    """Stream from PG and insert into SQLite one chunk at a time."""
+    quoted_cols  = ", ".join(f'"{c}"' for c in col_names)
+    placeholders = ", ".join("?" * len(col_names))
+    insert_sql   = f'INSERT OR IGNORE INTO "{table}" ({quoted_cols}) VALUES ({placeholders})'
+
+    total = 0
+    for batch in stream_table(pg_conn, table, col_names, chunk_size):
+        sqlite_conn.executemany(insert_sql, batch)
+        sqlite_conn.commit()
+        total += len(batch)
+        print(f"\r    {table}: {total} rows...", end="", flush=True)
+
+    if total == 0:
+        print(f"\r  · {table}: 0 rows (skipped)        ")
+    else:
+        print(f"\r  \u2713 {table}: {total} rows copied        ")
+
+
 # ── Arg parsing ───────────────────────────────────────────────────────────────
 
 def parse_args():
@@ -201,6 +214,8 @@ def parse_args():
     p.add_argument("--pg-user",     default=os.environ.get("DB_USER"))
     p.add_argument("--pg-password", default=os.environ.get("DB_USER_PASSWD"))
     p.add_argument("--output",      default=os.environ.get("DB_PATH", "biluppgifter.db"))
+    p.add_argument("--chunk-size",  default=500, type=int,
+                   help="Rows fetched/inserted per batch (default: 500)")
     p.add_argument("--dry-run",     action="store_true")
     return p.parse_args()
 
@@ -216,9 +231,10 @@ def main():
     print()
     print("PostgreSQL → SQLite migration")
     print("─────────────────────────────")
-    print(f"  Source : {args.pg_user}@{args.pg_host}:{args.pg_port}/{args.pg_db}")
-    print(f"  Target : {args.output}")
-    print(f"  Dry run: {args.dry_run}")
+    print(f"  Source     : {args.pg_user}@{args.pg_host}:{args.pg_port}/{args.pg_db}")
+    print(f"  Target     : {args.output}")
+    print(f"  Chunk size : {args.chunk_size} rows")
+    print(f"  Dry run    : {args.dry_run}")
 
     # ── Connect ──────────────────────────────────────────────────────────────
     try:
@@ -226,54 +242,46 @@ def main():
             host=args.pg_host, port=args.pg_port,
             dbname=args.pg_db, user=args.pg_user, password=args.pg_password,
         )
+        # autocommit=True so named cursors work as holdable cursors
         pg.set_session(readonly=True, autocommit=True)
     except psycopg2.OperationalError as e:
         sys.exit(f"\nCould not connect to PostgreSQL: {e}")
 
     ok("Connected to PostgreSQL")
 
-    meta_cur = pg.cursor()  # plain tuple cursor — required for information_schema unpacking
-
     # ── Introspect schema ────────────────────────────────────────────────────
     header("Detected schema:")
-    table_meta = {}   # table → {columns: [...], pk: [...]}
-    missing = []
+    meta_cur    = pg.cursor()   # plain tuple cursor for information_schema
+    table_meta  = {}
+    missing     = []
 
     for table in TABLES:
         cols = pg_columns(meta_cur, table)
         pk   = pg_primary_key(meta_cur, table)
         if not cols:
-            warn(f"{table}: table not found in PostgreSQL — will be skipped")
+            warn(f"{table}: not found in PostgreSQL — will be skipped")
             missing.append(table)
             continue
         table_meta[table] = {"columns": cols, "pk": pk}
-        col_summary = ", ".join(
-            f'{c["name"]} ({c["type"]})' for c in cols
-        )
+        col_summary = ", ".join(f'{c["name"]} ({c["type"]})' for c in cols)
         print(f"  {table:<20}: {col_summary}")
 
-    # ── Fetch data ───────────────────────────────────────────────────────────
-    header("Fetching data from PostgreSQL…")
-    data = {}
-    data_cur = pg.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-
-    for table, meta in table_meta.items():
-        col_names = [c["name"] for c in meta["columns"]]
-        quoted    = ", ".join(f'"{c}"' for c in col_names)
-        data_cur.execute(f'SELECT {quoted} FROM "{table}"')
-        data[table] = data_cur.fetchall()
-        ok(f"{table}: {len(data[table])} rows")
-
-    data_cur.close()
     meta_cur.close()
-    pg.close()
-    ok("Disconnected from PostgreSQL")
 
+    # ── Dry run: just print counts, no SQLite writes ─────────────────────────
     if args.dry_run:
+        header("Row counts (dry run):")
+        count_cur = pg.cursor()
+        for table in table_meta:
+            count_cur.execute(f'SELECT COUNT(*) FROM "{table}"')
+            (n,) = count_cur.fetchone()
+            print(f"  {table:<20}: {n}")
+        count_cur.close()
+        pg.close()
         print("\nDry run — no SQLite file written.")
         return
 
-    # ── Write SQLite ─────────────────────────────────────────────────────────
+    # ── Prepare SQLite ───────────────────────────────────────────────────────
     header("Writing to SQLite…")
 
     output_path = Path(args.output)
@@ -281,34 +289,32 @@ def main():
 
     sqlite = sqlite3.connect(output_path)
     sqlite.execute("PRAGMA journal_mode = WAL")
-    sqlite.execute("PRAGMA foreign_keys = OFF")
+    sqlite.execute("PRAGMA synchronous = NORMAL")   # safe with WAL, faster than FULL
+    sqlite.execute("PRAGMA foreign_keys = OFF")     # re-enabled after bulk insert
 
-    # Create tables
     for table, meta in table_meta.items():
         ddl = build_create_table(table, meta["columns"], meta["pk"])
         sqlite.execute(ddl)
     sqlite.commit()
     ok("Tables created")
 
-    # Copy rows
+    # ── Stream PG → SQLite ───────────────────────────────────────────────────
+    print()
     for table, meta in table_meta.items():
         col_names = [c["name"] for c in meta["columns"]]
-        copy_table(data[table], sqlite, table, col_names)
-    sqlite.commit()
+        copy_table(pg, sqlite, table, col_names, args.chunk_size)
 
-    # Create views
+    sqlite.execute("PRAGMA foreign_keys = ON")
+
+    # ── Views ────────────────────────────────────────────────────────────────
     header("Creating views…")
     for view_name, view_sql in VIEWS.items():
         try:
-            sqlite.execute(
-                f'CREATE VIEW IF NOT EXISTS "{view_name}" AS {view_sql}'
-            )
+            sqlite.execute(f'CREATE VIEW IF NOT EXISTS "{view_name}" AS {view_sql}')
             ok(view_name)
         except sqlite3.OperationalError as e:
             warn(f"{view_name}: skipped — {e}")
     sqlite.commit()
-
-    sqlite.execute("PRAGMA foreign_keys = ON")
 
     # ── Verify ───────────────────────────────────────────────────────────────
     header("Verification (SQLite row counts):")
@@ -317,11 +323,12 @@ def main():
         print(f"  {table:<20}: {count}")
 
     sqlite.close()
+    pg.close()
 
     print(f"\nMigration complete → {output_path.resolve()}\n")
 
     if missing:
-        print("Tables not found in PostgreSQL (skipped):", ", ".join(missing))
+        print("Skipped (not found in PostgreSQL):", ", ".join(missing))
         print()
 
 
