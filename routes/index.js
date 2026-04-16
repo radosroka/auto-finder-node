@@ -1,7 +1,6 @@
-const { check, validationResult } = require('express-validator')
-const Router = require('express-promise-router')
+const { Router } = require('express')
 
-const router =  new Router()
+const router = Router()
 
 const lists = require('./manage_lists')
 const login = require('./login')

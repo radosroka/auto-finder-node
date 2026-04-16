@@ -1,6 +1,3 @@
-const { check, validationResult } = require('express-validator')
-const Router = require('express-promise-router')
-
 const db = require('../db/sqlite')
 const lists = require('./manage_lists')
 
