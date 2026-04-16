@@ -10,11 +10,11 @@ const user = require('../user/user')
 
 
 router.all('/', (req, res) => {
-  return res.redirect('query?query=limit%3D100');
+  return res.redirect('query?query=');
 });
 
 router.all('/main', (req, res) => {
-  return res.redirect('query?query=limit%3D100');
+  return res.redirect('query?query=');
 });
 
 router.get('/manage_lists', user.protected, lists.manage_lists_get)

@@ -47,7 +47,7 @@ exports.get = async function (req, res) {
     sql = sql + where + query.join(' AND ')
   }
 
-  var limit = '500'
+  var limit = '5000'
 
   if (qs.has('limit')) {
     limit = qs.get('limit')
@@ -57,7 +57,7 @@ exports.get = async function (req, res) {
   if (qs.has('car_year_from') || qs.has('car_year_to')) {
     sql = sql + ' ORDER BY car_year ';
   }
-	
+
   sql = sql + ' LIMIT ' + limit + ';';
 
   console.log(sql)
