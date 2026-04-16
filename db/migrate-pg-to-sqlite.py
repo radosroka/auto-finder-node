@@ -81,7 +81,7 @@ def header(msg):print(f"\n{msg}")
 
 
 def pg_columns(cur, table):
-    """Return list of (column_name, sqlite_type, is_nullable, column_default) from PG."""
+    """Return list of column dicts for a table, using a plain (tuple) cursor."""
     cur.execute("""
         SELECT column_name,
                data_type,
@@ -92,9 +92,8 @@ def pg_columns(cur, table):
           AND table_name   = %s
         ORDER BY ordinal_position
     """, (table,))
-    rows = cur.fetchall()
     result = []
-    for col_name, pg_type, nullable, default in rows:
+    for col_name, pg_type, nullable, default in cur.fetchall():
         sqlite_type = PG_TO_SQLITE.get(pg_type.lower(), "TEXT")
         result.append({
             "name":     col_name,
@@ -106,7 +105,7 @@ def pg_columns(cur, table):
 
 
 def pg_primary_key(cur, table):
-    """Return list of PK column names for a table."""
+    """Return list of PK column names for a table, using a plain (tuple) cursor."""
     cur.execute("""
         SELECT kcu.column_name
         FROM information_schema.table_constraints tc
@@ -118,7 +117,7 @@ def pg_primary_key(cur, table):
           AND tc.table_name      = %s
         ORDER BY kcu.ordinal_position
     """, (table,))
-    return [r["column_name"] for r in cur.fetchall()]
+    return [row[0] for row in cur.fetchall()]
 
 
 def build_create_table(table, columns, pk_cols):
@@ -233,7 +232,7 @@ def main():
 
     ok("Connected to PostgreSQL")
 
-    meta_cur = pg.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    meta_cur = pg.cursor()  # plain tuple cursor — required for information_schema unpacking
 
     # ── Introspect schema ────────────────────────────────────────────────────
     header("Detected schema:")
