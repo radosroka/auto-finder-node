@@ -3,17 +3,18 @@ exports.users = [];
 
 exports.loadUsers = async function (db) {
 
-  var sql = 'SELECT * from users;'
+  var sql = 'SELECT user_id, user_name, user_passwd_hash FROM users;'
 
   const result = await db.query({
-    rowMode: 'array',
     text: sql,
   });
 
-  var data = result.rows
-  for (let index in data) {
-    var user = {user_id: data[index][0], user_name: data[index][1], digest: data[index][2]}
-    exports.users.push(user)
+  for (const row of result.rows) {
+    exports.users.push({
+      user_id:  row.user_id,
+      user_name: row.user_name,
+      digest:   row.user_passwd_hash,
+    })
   }
 
 };

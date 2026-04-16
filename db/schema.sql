@@ -3,9 +3,9 @@
 -- so it is safe to re-run on every launch.
 
 CREATE TABLE IF NOT EXISTS users (
-    user_id  INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_name TEXT NOT NULL UNIQUE,
-    digest   TEXT NOT NULL          -- SHA-256 hex of password
+    user_id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_name        TEXT NOT NULL UNIQUE,
+    user_passwd_hash TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS cars (

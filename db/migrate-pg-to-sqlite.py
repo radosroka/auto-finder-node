@@ -287,7 +287,7 @@ def main():
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    sqlite = sqlite3.connect(output_path)
+    sqlite = sqlite3.connect(str(output_path))
     sqlite.execute("PRAGMA journal_mode = WAL")
     sqlite.execute("PRAGMA synchronous = NORMAL")   # safe with WAL, faster than FULL
     sqlite.execute("PRAGMA foreign_keys = OFF")     # re-enabled after bulk insert
