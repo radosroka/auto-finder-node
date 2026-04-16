@@ -27,12 +27,6 @@
       "db/**",
       "node_modules/**"
     ],
-    "extraResources": [
-      {
-        "from": "db/biluppgifter.db",
-        "to": "biluppgifter.db"
-      }
-    ],
     "win": {
       "target": [
         {
