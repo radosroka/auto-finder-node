@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, shell, dialog } = require('electron');
 const path = require('path');
 const crypto = require('crypto');
 
@@ -32,8 +32,6 @@ function createWindow(port) {
   });
 
   mainWindow.loadURL(`http://127.0.0.1:${port}`);
-  mainWindow.webContents.openDevTools();
-
   // External links open in the system browser; internal links stay in the app
   const internalBase = `http://127.0.0.1:${port}`;
 
@@ -51,6 +49,21 @@ function createWindow(port) {
       event.preventDefault();
       shell.openExternal(url);
     }
+  });
+
+  // Handle file downloads with a native save dialog (avoids DBus/XDG issues on Linux)
+  mainWindow.webContents.session.on('will-download', (event, item) => {
+    const defaultPath = path.join(app.getPath('downloads'), item.getFilename());
+    dialog.showSaveDialog(mainWindow, {
+      defaultPath,
+      filters: [{ name: 'Excel', extensions: ['xlsx'] }],
+    }).then(({ canceled, filePath }) => {
+      if (canceled || !filePath) {
+        item.cancel();
+      } else {
+        item.setSavePath(filePath);
+      }
+    });
   });
 
   mainWindow.on('closed', () => {
