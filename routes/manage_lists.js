@@ -1,6 +1,8 @@
 const db = require('../db/sqlite');
 const ExcelJS = require('exceljs');
 
+const PER_PAGE = 100;
+
 exports.getAllByUser = async function (user_id) {
 
   var sql = 'SELECT list_id,list_name,count FROM list_count_view ' +
@@ -122,7 +124,23 @@ exports.manage_lists_get = async function (req, res) {
     return res.redirect('/manage_lists');
   }
 
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const where = ' WHERE user_id = ' + user_id;
+
+  const countResult = await db.query({ rowMode: 'array', text: 'SELECT COUNT(*) FROM list_count_view' + where + ';' });
+  const total = countResult.rows[0][0];
+  const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+  const safePage = Math.min(page, totalPages);
+  const offset = (safePage - 1) * PER_PAGE;
+
+  const pageResult = await db.query({
+    rowMode: 'array',
+    text: 'SELECT list_id,list_name,count FROM list_count_view' + where + ' LIMIT ' + PER_PAGE + ' OFFSET ' + offset + ';',
+  });
+
   const custom = await exports.getAllByUser(user_id)
+
+  const pagination = { page: safePage, perPage: PER_PAGE, total, totalPages };
 
   return res.render('manage_lists', {
     title: 'List Query',
@@ -130,7 +148,8 @@ exports.manage_lists_get = async function (req, res) {
     session: req.session,
     custom_lists: custom,
     data: req.body,
-    rows: custom,
+    rows: pageResult.rows,
+    pagination,
   });
 };
 
@@ -175,8 +194,17 @@ exports.manage_list_content_get = async function (req, res) {
     return exportListToResponse(list_id, user_id, list_name, res)
   }
 
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const where = ' WHERE user_id = ' + user_id + ' AND list_id = ' + list_id;
+
+  const countResult = await db.query({ rowMode: 'array', text: 'SELECT COUNT(*) FROM list_view2' + where + ';' });
+  const total = countResult.rows[0][0];
+  const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+  const safePage = Math.min(page, totalPages);
+  const offset = (safePage - 1) * PER_PAGE;
+
   const sql = 'SELECT car_plate,car_model,type_name,car_color,car_year,owner_name,owner_age,owner_street,owner_postnumber,owner_city,owner_phone,link,list_id,car_id,owner_id' +
-      ' FROM list_view2 WHERE user_id = ' + user_id + ' AND list_id = ' + list_id + ';'
+      ' FROM list_view2' + where + ' LIMIT ' + PER_PAGE + ' OFFSET ' + offset + ';';
 
   const custom = await exports.getAllByUser(user_id)
 
@@ -185,6 +213,14 @@ exports.manage_list_content_get = async function (req, res) {
     text: sql,
   });
 
+  const pagination = {
+    page: safePage,
+    perPage: PER_PAGE,
+    total,
+    totalPages,
+    list_id,
+  };
+
   return res.render('manage_list_content', {
     title: 'List Content Query',
     session: req.session,
@@ -192,6 +228,7 @@ exports.manage_list_content_get = async function (req, res) {
     custom_lists: custom,
     data: req.body,
     rows: result.rows,
+    pagination,
   });
 };
 
