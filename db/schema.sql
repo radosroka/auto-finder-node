@@ -57,12 +57,17 @@ CREATE TABLE IF NOT EXISTS link_to_merinfo (
     PRIMARY KEY (owner_id, car_id)
 );
 
+-- ── Seed data ───────────────────────────────────────────────────────────────
+
+-- Default lubo user — created only if not already present
+INSERT OR IGNORE INTO users (user_id, user_name, user_passwd_hash)
+VALUES (2, 'lubo', 'cd2eb0837c9b4c962c22d2ff8b5441b7b45805887f051d39bf133b583baf6860');
+
 -- ── Views ───────────────────────────────────────────────────────────────────
 
 CREATE VIEW IF NOT EXISTS my_view AS
-    SELECT c.car_id, c.car_plate, c.car_model, t.type_name, c.car_color, c.car_year
-    FROM cars c
-    LEFT JOIN types t ON c.type_id = t.type_id;
+    SELECT c.car_id, c.car_plate, c.car_model, c.type_name, c.car_color, c.car_year
+    FROM cars c;
 
 CREATE VIEW IF NOT EXISTS list_count_view AS
     SELECT
@@ -95,7 +100,6 @@ CREATE VIEW IF NOT EXISTS list_view2 AS
     FROM list_items li
     JOIN  cars  c  ON li.car_id  = c.car_id
     JOIN  lists l  ON li.list_id = l.list_id
-    LEFT JOIN types            t  ON c.type_id   = t.type_id
     LEFT JOIN owner_cars       oc ON c.car_id    = oc.car_id
     LEFT JOIN owners            o ON oc.owner_id = o.owner_id
     LEFT JOIN link_to_merinfo  lm ON lm.car_id   = c.car_id

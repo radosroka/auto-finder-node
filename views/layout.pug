@@ -44,10 +44,38 @@ html(style="padding: 2%")
                     li
                       a(class="dropdown-item" href="/manage_list_content?list_id=" + l[0]) #{l[1]} (#{l[2]})
 
+              li(class="nav-item dropdown")
+                a(class="nav-link dropdown-toggle"
+                  id="navbarDropdownDatabase"
+                  role="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  href="#") Database
+                ul(class="dropdown-menu" aria-labelledby="navbarDropdownDatabase")
+                  li
+                    a(class="dropdown-item" href="#" id="exportDbBtn") Export Database
+                  li
+                    a(class="dropdown-item" href="#" id="importDbBtn") Import Database
+
               li(class="nav-item")
                 a(class="nav-link" href="/logout") Log out
 
-
-
+    script.
+      document.addEventListener('DOMContentLoaded', function () {
+        var exportBtn = document.getElementById('exportDbBtn');
+        var importBtn = document.getElementById('importDbBtn');
+        if (exportBtn) {
+          exportBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (window.electronAPI) window.electronAPI.exportDb();
+          });
+        }
+        if (importBtn) {
+          importBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (window.electronAPI) window.electronAPI.importDb();
+          });
+        }
+      });
 
   block content

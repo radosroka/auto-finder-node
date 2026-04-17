@@ -57,4 +57,16 @@ function query(opts) {
   }
 }
 
-module.exports = { query, client };
+function closeDb() {
+  if (db) {
+    db.close();
+    db = null;
+  }
+}
+
+function backupDb(destPath) {
+  const database = getDb();
+  return database.backup(destPath);
+}
+
+module.exports = { query, client, closeDb, backupDb };
