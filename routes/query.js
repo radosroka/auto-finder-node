@@ -7,6 +7,8 @@ exports.get = async function (req, res) {
   var where = " WHERE "
   var query = []
 
+  req.body = req.body || {};
+
   const qs = new URLSearchParams(req.query.query)
 
   if (qs.has('car_plate')) {
