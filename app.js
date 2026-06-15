@@ -17,7 +17,7 @@ user.loadUsers(db);
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 app.set('query parser', 'simple')
 app.use(express.json())
 app.use(bodyParser.urlencoded({ extended: true }));
