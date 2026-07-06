@@ -136,15 +136,15 @@ block content
     for x in rows
       - i = i + 1
       - var tr_class = clickable_class
-      - if (x[5] > threshold) tr_class += " table-success"
-      tr(class=tr_class id=x[5])
+      - if (x[0] > threshold) tr_class += " table-success"
+      tr(class=tr_class id=x[0])
         th(scope="col") #{offset + i}
         td(scope="col")
-          a(href=biluppgifter_link + x[0], target="_blank") #{x[0]}
-        td(scope="col") #{x[1]}
+          a(href=biluppgifter_link + x[1], target="_blank") #{x[1]}
         td(scope="col") #{x[2]}
         td(scope="col") #{x[3]}
         td(scope="col") #{x[4]}
+        td(scope="col") #{x[5]}
 
   if pagination && pagination.totalPages > 1
     nav(aria-label="Page navigation" class="mt-2")
